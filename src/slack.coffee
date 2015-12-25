@@ -36,6 +36,7 @@ class SlackBot extends Adapter
     @client.on 'close', @.clientClose
     @client.on 'message', @.message
     @client.on 'userChange', @.userChange
+    @client.on 'raw_message', @.reaction
     @robot.brain.on 'loaded', @.brainLoaded
 
     @robot.on 'slack-attachment', @.customMessage
@@ -99,6 +100,32 @@ class SlackBot extends Adapter
   clientClose: =>
     # Don't actually do anything since we may reconnect in the future
     @robot.logger.info 'Slack client closed, waiting for reconnect'
+
+  reaction: (msg) =>
+    # if message is a reaction
+    if msg.type == "reaction_removed" or msg.type == "reaction_added"
+      # get channel and user data
+      user = @robot.brain.userForId msg.user
+      channel = @client.getChannelGroupOrDMByID msg.item.channel if msg.item.channel
+      emoji = msg.reaction
+      item = msg.item
+      type = msg.item.type
+      @robot.logger.info "type object: #{type}"
+      cnl = msg.item.type.channel
+      @robot.logger.info "channel object: #{cnl}"
+    #   @robot.logger.info "message: #{msg.text}"
+      for x of msg
+        @robot.logger.info "var: #{x}"
+
+      for x of item
+        @robot.logger.info "item: #{x}"
+
+      for x of cnl
+        @robot.logger.info "channel: #{x}"
+
+      # populate event data
+      reaction = message: msg, user: user, channel: channel, emoji: emoji
+      @robot.emit 'reaction', reaction
 
   message: (msg) =>
     # Ignore our own messages
